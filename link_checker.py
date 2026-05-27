@@ -4,7 +4,8 @@ import sys
 import requests
 
 # ================= 設定 =================
-DATA_DIR = "wiki_data"
+# 💡 2つのサイトで使い回せるように、環境変数からフォルダ名を受け取れるようにします
+DATA_DIR = os.environ.get("WIKI_DATA_DIR", "wiki_data")
 WEBHOOK_URL = os.environ.get("GAS_WEBHOOK_URL")
 # GASのコード内に書いた合言葉（SECURITY_TOKEN）と同じものをここに書きます
 SECURITY_TOKEN = os.environ.get("GAS_SECURITY_TOKEN", "my_dokuwiki_secret_token_1234")
