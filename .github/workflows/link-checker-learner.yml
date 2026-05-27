@@ -1,8 +1,8 @@
-name: DokuWiki Link Checker (support)
+name: DokuWiki Link Checker (learner)
 
 on:
   schedule:
-    - cron: '0 0 * * 1'  # 毎週月曜日の朝9時（日本時間）に自動実行
+    - cron: '10 0 * * 1'  # supportの10分後（毎週月曜朝9:10）に自動実行
   workflow_dispatch:      # ボタンを押して手動でいつでも実行可能
 
 jobs:
@@ -20,8 +20,8 @@ jobs:
       run: |
         echo "$SSH_KEY" > private_key.pem
         chmod 400 private_key.pem
-        mkdir -p wiki_data_support
-        scp -P 8022 -i private_key.pem -r -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/home/c6600173/public_html/support.codeofgenius.net/data/pages ./wiki_data_support
+        mkdir -p wiki_data_learner
+        scp -P 8022 -i private_key.pem -r -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/home/c6600173/public_html/learner.codeofgenius.net/data/pages ./wiki_data_learner
         rm -f private_key.pem
 
     - name: Set up Python
@@ -36,7 +36,7 @@ jobs:
 
     - name: Run Link Checker
       env:
-        WIKI_DATA_DIR: 'wiki_data_support/pages' # 💡scpの挙動に合わせてパスを調整
+        WIKI_DATA_DIR: 'wiki_data_learner/pages' # 💡scpの挙動に合わせてパスを調整
         GAS_WEBHOOK_URL: ${{ secrets.GAS_WEBHOOK_URL }}
         GAS_SECURITY_TOKEN: ${{ secrets.GAS_SECURITY_TOKEN }}
       run: python link_checker.py
