@@ -4,11 +4,11 @@ import sys
 import requests
 
 # ================= 設定 =================
-# 💡 2つのサイトで使い回せるように、環境変数からフォルダ名を受け取れるようにします
 DATA_DIR = os.environ.get("WIKI_DATA_DIR", "wiki_data")
 WEBHOOK_URL = os.environ.get("GAS_WEBHOOK_URL")
-# GASのコード内に書いた合言葉（SECURITY_TOKEN）と同じものをここに書きます
 SECURITY_TOKEN = os.environ.get("GAS_SECURITY_TOKEN", "my_dokuwiki_secret_token_1234")
+# 💡 ワークフローからサイトごとのベースURL（https://...）を受け取ります
+WIKI_BASE_URL = os.environ.get("WIKI_BASE_URL", "")
 # ========================================
 
 if not WEBHOOK_URL:
@@ -18,7 +18,6 @@ if not WEBHOOK_URL:
 drive_url_pattern = re.compile(r'https://drive\.google\.com/[^\s\]|]+')
 links_to_check = []
 
-# URLからGoogleドライブのファイルIDを抽出する関数
 def extract_file_id(url):
     match = re.search(r'/d/([a-zA-Z0-9-_]+)', url)
     if match: return match.group(1)
@@ -57,14 +56,12 @@ if not links_to_check:
 
 print(f"📡 GAS Webhookへデータを送信中... (チェック対象: {len(links_to_check)}件)")
 
-# GASに送るデータのかたまりを作成
 payload = {
     "token": SECURITY_TOKEN,
     "links": links_to_check
 }
 
 try:
-    # GAS WebhookにPOSTリクエストを送信
     response = requests.post(WEBHOOK_URL, json=payload, timeout=300)
     
     if response.status_code != 200:
@@ -85,10 +82,17 @@ try:
     if broken_links:
         print(f"❌ リンク切れ・エラーが {len(broken_links)} 件見つかりました。\n")
         for link in broken_links:
-            print(f"・対象URL  : {link['url']}")
+            print(f"・切れたURL : {link['url']}")
             print(f"  Wikiページ: {link['page']}")
+            
+            # 💡【新機能】ベースURLがある場合、クリックできるURLを合成して表示
+            if WIKI_BASE_URL:
+                page_url_path = link['page'].replace(":", "/") # 「:」を「/」に変換
+                base = WIKI_BASE_URL.rstrip("/")
+                print(f"  直接リンク: {base}/{page_url_path}")
+                
             print(f"  エラー理由: {link['reason']}\n")
-        sys.exit(1) # GitHubのアクションをエラーにして通知を飛ばす
+        sys.exit(1)
     else:
         print("✅ すべてのGoogleドライブリンクは正常にアクセス可能です！")
         sys.exit(0)

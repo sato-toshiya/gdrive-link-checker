@@ -47,6 +47,7 @@ jobs:
     - name: Run Link Checker
       env:
         WIKI_DATA_DIR: 'wiki_data_learner/pages'
+        WIKI_BASE_URL: 'https://learner.codeofgenius.net/'
         GAS_WEBHOOK_URL: ${{ secrets.GAS_WEBHOOK_URL }}
         GAS_SECURITY_TOKEN: ${{ secrets.GAS_SECURITY_TOKEN }}
       run: python link_checker.py
