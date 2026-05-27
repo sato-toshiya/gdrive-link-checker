@@ -2,8 +2,8 @@ name: DokuWiki Link Checker (learner)
 
 on:
   schedule:
-    - cron: '10 0 * * 1'  # supportの10分後（毎週月曜朝9:10）に自動実行
-  workflow_dispatch:      # ボタンを押して手動でいつでも実行可能
+    - cron: '10 0 * * 1'
+  workflow_dispatch:
 
 jobs:
   check-links:
@@ -13,15 +13,25 @@ jobs:
     - name: Checkout code
       uses: actions/checkout@v4
 
-    # 💡 外部プラグインを使わず、Linux標準のscpコマンドで安全にダウンロードします
+    # 💡 1. 前回のダウンロードデータをクラウドから復元する設定を追加
+    - name: Cache Wiki Data
+      uses: actions/cache@v4
+      with:
+        path: wiki_data_learner
+        key: wiki-data-learner-${{ github.run_id }}
+        restore-keys: |
+          wiki-data-learner-
+
+    # 💡 2. scpを廃止し、差分だけを超高速で同期する rsync コマンドに変更
     - name: Download DokuWiki pages
       env:
         SSH_KEY: ${{ secrets.SERVER_SSH_KEY }}
       run: |
-        echo "$SSH_KEY" > private_key.pem
+        printenv SSH_KEY > private_key.pem
         chmod 400 private_key.pem
-        mkdir -p wiki_data_learner
-        scp -P 8022 -i private_key.pem -r -o StrictHostKeyChecking=no ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/home/c6600173/public_html/learner.codeofgenius.net/data/pages ./wiki_data_learner
+        mkdir -p wiki_data_learner/pages
+        # rsync を使って変更があったファイルだけを高速ダウンロード
+        rsync -e "ssh -p 8022 -i private_key.pem -o StrictHostKeyChecking=no -o BatchMode=yes" -rtz --delete ${{ secrets.SERVER_USER }}@${{ secrets.SERVER_HOST }}:/home/c6600173/public_html/learner.codeofgenius.net/data/pages/ ./wiki_data_learner/pages/
         rm -f private_key.pem
 
     - name: Set up Python
@@ -36,7 +46,7 @@ jobs:
 
     - name: Run Link Checker
       env:
-        WIKI_DATA_DIR: 'wiki_data_learner/pages' # 💡scpの挙動に合わせてパスを調整
+        WIKI_DATA_DIR: 'wiki_data_learner/pages'
         GAS_WEBHOOK_URL: ${{ secrets.GAS_WEBHOOK_URL }}
         GAS_SECURITY_TOKEN: ${{ secrets.GAS_SECURITY_TOKEN }}
       run: python link_checker.py
