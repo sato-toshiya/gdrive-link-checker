@@ -65,7 +65,7 @@ payload = {
 
 try:
     # GAS WebhookにPOSTリクエストを送信
-    response = requests.post(WEBHOOK_URL, json=payload, timeout=30)
+    response = requests.post(WEBHOOK_URL, json=payload, timeout=300)
     
     if response.status_code != 200:
         print(f"❌ GAS側でエラーが発生しました (Status {response.status_code})")
